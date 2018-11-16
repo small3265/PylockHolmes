@@ -1,6 +1,8 @@
 import sys
 import pyshark
 import pylurker
+#https://wiki.wireshark.org/SampleCaptures
+
 
 print("hi")
 def print_conversation_header(pkt):
@@ -15,12 +17,15 @@ def print_conversation_header(pkt):
         # ignore packets that aren't TCP/UDP or IPv4
         pass
 
+cap = pyshark.FileCapture('mult2.pcap')
+file = 'mult2.pcap'
+"""
 mv = pylurker.load_MAC_Vendor()
 
 ipList = list()
 vendList = list()
 #print(mv)
-cap = pyshark.FileCapture('mult2.pcap')
+
 print(cap[0].layers)
 for pkt in cap:
     #print(pkt)
@@ -39,6 +44,14 @@ for pkt in cap:
 #print(ipList)
 exit()
 
+"""
+hunt = pylurker.Hunter(file)
+hunt.print_file_path()
+hunt.acquire_targets()
+#hunt.print_2()
+#print(len(hunt.print_target_list()))
+hunt.print_target_list()
+print("done")
 
 sys.exit()
 #cap.apply_on_packets(print_conversation_header, timeout=1)
