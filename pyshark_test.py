@@ -48,9 +48,15 @@ exit()
 hunt = pylurker.Hunter(file)
 hunt.print_file_path()
 hunt.acquire_targets()
+
 #hunt.print_2()
 #print(len(hunt.print_target_list()))
 hunt.print_target_list()
+#hunt.print_highest_layers(2)
+hunt.print_target_data(0)
+#print(str(hunt.get_target_num(5).get_SSL_source()))
+
+#hunt.get_target_num(7).display_browser()
 print("done")
 
 sys.exit()

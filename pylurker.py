@@ -31,12 +31,16 @@ class Target:
         Target.total_targets += 1
         self.__eth_add = eth
         self.__pkt_repository = list()
+        #self.__name = self.get_comp_name()
 
     def get_eth_add(self):
         return self.__eth_add
 
     def get_mac_add(self):
         return str(self.__eth_add).replace(':', '').upper()[0:6]
+
+    def convert_mac_add(self, eth):
+        return str(eth).replace(':', '').upper()[0:6]
 
     def insert_packet(self, pkt):
         self.__pkt_repository.append(pkt)
@@ -48,19 +52,41 @@ class Target:
     def get_packets(self):
         return self.__pkt_repository
 
-    def sites_visited(self):
+    def display_pkt_info(self):
+        for pkt in self.__pkt_repository:
+            try:
+                print(pkt.info)
+            except AttributeError as e:
+                pass
+
+    def get_comp_name(self):
+        for pkt in self.__pkt_repository:
+            if pkt.highest_layer == 'BOOTP':
+                try:
+                    return pkt.bootp.option_hostname
+                except AttributeError:
+                    pass
+        return 'Unknown'
+
+
+    def ip_visited(self):
         visited = dict()
         for pkt in self.__pkt_repository:
-            """
+
             #https://thepacketgeek.com/pyshark-using-the-packet-object/
             try:
                 if(pkt.ip.dst in visited.keys()):
                     visited[pkt.ip.dst] += 1
                 else:
+
                     visited[pkt.ip.dst] = 0
             except AttributeError as e:
                 pass
-            """
+        return visited
+
+    def sites_visited(self):
+        visited = dict()
+        for pkt in self.__pkt_repository:
             try:
                 if (pkt.dns.qry_name in visited.keys()):
                     visited[pkt.dns.qry_name] += 1
@@ -68,6 +94,7 @@ class Target:
                     visited[pkt.dns.qry_name] = 0
             except AttributeError as e:
                 pass
+
         #https: // www.datacamp.com / community / tutorials / python - dictionary - comprehension
         #return {url_lookup(key):value for (key,value) in visited.items()}
         return visited
@@ -90,15 +117,51 @@ class Target:
 
     def __repr__(self):
         if self.get_mac_add() in load_MAC_Vendor().keys():
-            return str(self.__eth_add) + " ||| " + load_MAC_Vendor()[self.get_mac_add()] + \
+            return str(self.__eth_add) + " ||| " + load_MAC_Vendor()[self.get_mac_add()] + " ||| " + self.get_comp_name() +\
                     "\n   Number of Packets = " + self.get_repo_size() + "\n      " + str(self.sites_visited()) + \
-                    "\n      " + str(self.high_layers())
+                    "\n      " + str(self.high_layers()) + "\n       " + str(self.ip_visited()) #+ \
+                    #"\n      " + str(self.get_SSL_source())
         else:
-            return str(self.__eth_add) + " ||| Unknown Vendor" + "\n   Number of Packets = " + \
+            return str(self.__eth_add) + " ||| Unknown Vendor" + " ||| " + self.get_comp_name() +\
+                   "\n   Number of Packets = " + \
                    self.get_repo_size() + "\n      " + str(self.sites_visited()) + \
-                    "\n      " + str(self.high_layers())
+                    "\n      " + str(self.high_layers()) + "\n       " + str(self.ip_visited()) #+ \
+                    #"\n      " + str(self.get_SSL_source())
 
+    def display_packets(self):
+        for pkt in self.__pkt_repository:
+            print(pkt)
 
+    def display_highest_layer(self):
+        for pkt in self.__pkt_repository:
+            print(pkt.highest_layer)
+
+    def display_SSL(self):
+        for pkt in self.__pkt_repository:
+            try:
+                if(pkt.highest_layer == 'SSL'):
+                    print(pkt)
+            except AttributeError:
+                pass
+
+    def get_SSL_source(self):
+        sources = dict()
+        for pkt in self.__pkt_repository:
+            if(pkt.highest_layer == 'SSL'):
+                if self.convert_mac_add(pkt.eth.src) in load_MAC_Vendor().keys():
+                    if (pkt.eth.src in sources.keys()):
+                        sources[load_MAC_Vendor()[self.convert_mac_add(pkt.eth.src)]] += 1
+                    else:
+                        sources[self.convert_mac_add(pkt.eth.src)] = 0
+        return sources
+
+    def display_browser(self):
+        for pkt in self.__pkt_repository:
+            try:
+                if(pkt.highest_layer == 'BROWSER'):
+                    print(pkt)
+            except AttributeError:
+                pass
 class Hunter():
 
     def __init__(self, capFile=None):
@@ -131,9 +194,30 @@ class Hunter():
             if tt.get_eth_add() == eth:
                 return tt
 
+    def print_target_data(self, num=None):
+        if num == None:
+            for tt in self.__targetList:
+                tt.display_packets()
+        elif num >= 0 and num < len(self.__targetList):
+            self.__targetList[num].display_packets()
+        else:
+            print("Number out of range of target list")
+
+    def print_highest_layers(self, num=None):
+        if num == None:
+            for tt in self.__targetList:
+                tt.display_highest_layer()
+        elif num >= 0 and num < len(self.__targetList):
+            self.__targetList[num].display_highest_layer()
+        else:
+            print("Number out of range of target list")
 
     def get_target_list(self):
         return self.__targetList
+
+    def get_target_num(self, num):
+        if num >= 0 and num < len(self.__targetList):
+            return self.__targetList[num]
 
     def print_target_list(self):
         for tt in self.__targetList:
