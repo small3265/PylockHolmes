@@ -1,0 +1,17 @@
+So we are still looking to accomplish the following:
+
+
+1. Need to acquire ftp data display and storage
+2. Make the connection from the router ETH to IP connection
+    - Individual computers send ethernet requests to the Asus Router which makes internet requests
+    - Need to match ethernet request to internet request in order to determine website visited by the
+       each individual computer
+3. Need to be able to save target's packet list to file
+4. Need to be able to load individual data into capture file
+5. Need to add live capture sniff capabilities
+6. Need to use subprocess to connect to wifi
+7. Need to possible utilize a wifi brute force
+
+
+
+-  Also need to do powerpoint and reflections

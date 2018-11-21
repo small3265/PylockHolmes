@@ -1,6 +1,6 @@
 import pyshark
 import socket
-
+import os.path
 
 
 # function to create a MAC address to vendor dictionary
@@ -115,6 +115,9 @@ class Target:
                 layers[pkt.highest_layer] = 0
         return layers
 
+    def mini_repr(self):
+        return str(self.__eth_add) + " ||| " + load_MAC_Vendor()[self.get_mac_add()] + " ||| " + self.get_comp_name()
+
     def __repr__(self):
         if self.get_mac_add() in load_MAC_Vendor().keys():
             return str(self.__eth_add) + " ||| " + load_MAC_Vendor()[self.get_mac_add()] + " ||| " + self.get_comp_name() +\
@@ -162,6 +165,8 @@ class Target:
                     print(pkt)
             except AttributeError:
                 pass
+
+
 class Hunter():
 
     def __init__(self, capFile=None):
@@ -172,14 +177,33 @@ class Hunter():
         self.__targetList = list()
         self.__cf = capFile
 
+    def load_cap_file(self, capFile):
+
+        try:
+            if os.path.isfile(capFile):
+                self.__capFile = pyshark.FileCapture(capFile)
+                self.__cf = capFile
+            else:
+                print("File does not exist")
+                return
+        except IOError as e:
+            print("Issue opening file")
+            return
+        finally:
+            print("Capture file loaded")
+            return
+
 
     def acquire_targets(self):
+        #if self.__capFile:
         for pkt in self.__capFile:
             if (not self.target_exists(pkt.eth.src)):
                 self.__targetList.append(Target(pkt.eth.src))
-                print(len(self.__targetList))
+                #print(len(self.__targetList))
             elif(self.target_exists(pkt.eth.src)):
                 self.get_target(pkt.eth.src).insert_packet(pkt)
+        #else:
+        #    print("No capture file selected")
 
 
 
@@ -214,6 +238,15 @@ class Hunter():
 
     def get_target_list(self):
         return self.__targetList
+
+    def get_mini_target_list(self):
+        tempList = list()
+        for tg in self.__targetList:
+            tempList.append(tg.mini_repr())
+        return tempList
+
+    def get_target_total(self):
+        return len(self.__targetList)
 
     def get_target_num(self, num):
         if num >= 0 and num < len(self.__targetList):

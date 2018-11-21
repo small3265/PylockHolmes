@@ -1,6 +1,8 @@
 import sys
 import pyshark
 import pylurker
+from pylurker import pylurkerUtility as pu
+
 #https://wiki.wireshark.org/SampleCaptures
 
 
@@ -58,6 +60,9 @@ hunt.print_target_data(0)
 
 #hunt.get_target_num(7).display_browser()
 print("done")
+
+cl = pu.CommandLine()
+
 
 sys.exit()
 #cap.apply_on_packets(print_conversation_header, timeout=1)
