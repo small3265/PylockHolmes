@@ -166,6 +166,29 @@ class Target:
             except AttributeError:
                 pass
 
+    def get_packet_by_num(self, num):
+        if num >= 0 and num < len(self.__pkt_repository):
+            return self.__pkt_repository[num]
+        else:
+            print("Packet is out of range")
+
+    def display_packet_summary(self):
+        build_string = ""
+        for i, pkt in enumerate(self.__pkt_repository):
+            lay = pkt.layers
+            #[str(f).lstrip('<').rstrip(' Layer>') for f in lay]
+            build_string += str(i) + " - "
+            for l in lay:
+
+                build_string += str(l._layer_name).upper()
+                if not l == lay[-1]:
+                    build_string += "-->"
+                else:
+                    build_string += "\n"
+        return build_string
+
+    def get_repo_len(self):
+        return len(self.__pkt_repository)
 
 class Hunter():
 
@@ -262,6 +285,8 @@ class Hunter():
     def print_2(self):
         print(self.__capFile[2])
 
-
+    def print_full_cap(self):
+        for pkt in self.__capFile:
+            print(pkt)
 
 

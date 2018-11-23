@@ -48,7 +48,8 @@ class CommandLine():
         self.__current_file = None
         self.__input_string = ""
         self.__prompt_string = "PyLurker >>> "
-        self.__options = ["[Scan]       | Return a list of all available networks",
+        self.__options = ["[List]       | List of all available commands",
+                        "[Scan]       | Return a list of all available networks",
                         "[Connect]    | Attempt connect to a network",
                         "[Load]       | Load a .pcap file",
                         "[Files]      | List of .pcap files in current folder",
@@ -56,15 +57,21 @@ class CommandLine():
                         "[Show]       | Show target list",
                         "[Stats]      | Show general stats on target list",
                         "[Inspect]    | Inspect a specific target",
-                        "[Info]       | Show detailed packet info on specific target",
+                        "[Current]    | Show current target",
+                        "[GetPack]    | Get specific packet from target",
+                        "[GetLayer]   | Get packets with specific layer"
                         "[CapPack]    | Show all packets in capture file",
                         "[TarPack]    | Show all packets of a target",
                         "[CapSave]    | Save the current .pcap file",
-                        "[TarSave]    | Save target's packets to file"]
+                        "[TarSave]    | Save target's packets to file",
+                        "[Sniff]      | Live capture on current network]"]
         self.__command_dict = {'list': self.display_commands, 'scan': self.get_networks,
                             'connect' : self.connect_networks, 'load': self.load_file,
                             'files': self.get_files, 'hunt': self.hunt_targets,
-                            'show': self.show_targets, 'stats': self.show_stats}
+                            'show': self.show_targets, 'stats': self.show_stats,
+                            'cappack': self.print_full, 'tarpack': self.print_tarpack,
+                            'inspect': self.inspect_target, 'getpack': self.get_pkt_target,
+                            'current': self.show_current}
 
 
 
@@ -130,7 +137,7 @@ class CommandLine():
         tempList = self.__hunter.get_mini_target_list()
         for i, tg in enumerate(tempList):
             print(i+1, "-", tg)
-
+        print("")
     def show_stats(self):
         tempList = self.__hunter.get_target_list()
         for i, tg in enumerate(tempList):
@@ -147,10 +154,55 @@ class CommandLine():
             if self.__input_string.lower() in self.__command_dict.keys():
                 self.__command_dict[self.__input_string]()
 
+    def print_full(self):
+        self.__hunter.print_full_cap()
 
+    def show_current(self):
+        print(self.__current_target)
 
+    def inspect_target(self):
+        print("\nPlease select target from list below using associated number:")
+        self.show_targets()
+        check = True
+        while(check):
+            tg_num = input("Target select >>>")
+            if tg_num.lower() == "back":
+                return
+            if tg_num.isnumeric() and int(tg_num) >= 1 and int(tg_num) <= self.__hunter.get_target_total():
+                self.__current_target = self.__hunter.get_target_num(int(tg_num)-1)
+                print("Current target = ", self.__current_target.mini_repr())
+                check = False
+            else:
+                print("Please select a number between 1 and ", self.__hunter.get_target_total(), ". Or type 'back'")
+        return
 
+    def print_tarpack(self):
+        if not self.__current_target:
+            print("Please use inspect to acquire a target!")
+            return
+        else:
+            for pkt in self.__current_target.get_packets():
+                print(pkt)
+        return
 
+    def get_pkt_target(self):
+        if not self.__current_target:
+            print("Please use inspect to acquire a target!")
+            return
+        else:
+            check = True
+            print("Please select packet by number:")
+            print(self.__current_target.display_packet_summary())
+            while(check):
+                pkt_num = input("Select Packet >>>")
+                if pkt_num.lower() == "back":
+                    return
+                if pkt_num.isnumeric() and int(pkt_num) >= 0 and int(pkt_num) < self.__current_target.get_repo_len():
+                    print(self.__current_target.get_packet_by_num(int(pkt_num)))
+                    check = False
+                else:
+                    print("Please select a number between 0 and ", self.__current_target.get_repo_len() - 1, ". Or type 'back'")
+            return
 
 
 if __name__ == "__main__":
