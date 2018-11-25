@@ -4,6 +4,7 @@ import sys
 import invade
 import pylurker
 import warnings
+import fileManager
 
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
@@ -46,6 +47,7 @@ class CommandLine():
         self.__network_list = list()
         self.__pcap_files = list()
         self.__current_file = None
+        self.__filman = fileManager.FileManager
         self.__input_string = ""
         self.__prompt_string = "PyLurker >>> "
         self.__options = ["[List]       | List of all available commands",
@@ -59,21 +61,23 @@ class CommandLine():
                         "[Inspect]    | Inspect a specific target",
                         "[Current]    | Show current target",
                         "[GetPack]    | Get specific packet from target",
-                        "[GetLayer]   | Get packets with specific layer"
+                        "[GetLayer]   | Get packets with specific layer",
                         "[CapPack]    | Show all packets in capture file",
                         "[TarPack]    | Show all packets of a target",
                         "[CapSave]    | Save the current .pcap file",
                         "[TarSave]    | Save target's packets to file",
-                        "[Sniff]      | Live capture on current network]"]
+                        "[Sniff]      | Live capture on current network]",
+                        "[Exit]       | To end program"]
+
+
         self.__command_dict = {'list': self.display_commands, 'scan': self.get_networks,
                             'connect' : self.connect_networks, 'load': self.load_file,
-                            'files': self.get_files, 'hunt': self.hunt_targets,
+                            'files': self.__filman.get_pcap_files, 'hunt': self.hunt_targets,
                             'show': self.show_targets, 'stats': self.show_stats,
                             'cappack': self.print_full, 'tarpack': self.print_tarpack,
                             'inspect': self.inspect_target, 'getpack': self.get_pkt_target,
-                            'current': self.show_current}
-
-
+                            'current': self.show_current, 'capsave': self.save_all,
+                            'tarsave': self.save_target}
 
         self.begin()
 
@@ -91,7 +95,7 @@ class CommandLine():
     def connect_networks(self):
         print("Still not available")
 
-    def get_files(self):
+    def get_text_files(self):
         fileList = list()
         fileList.extend([f for f in os.listdir(os.curdir) if f.endswith('.pcap')])
         print("\nPCAP Files in current directory:")
@@ -103,9 +107,9 @@ class CommandLine():
 
     def load_file(self):
         check = True
+        self.__hunter.flush()
         print("\nPlease select file from list below:")
-        self.get_files()
-        fileName = ""
+        self.__pcap_files = self.__filman.get_pcap_files(self)
         while(check):
             fileName = input("Select File >>>")
             if fileName.lower() == "back":
@@ -118,14 +122,67 @@ class CommandLine():
             else:
                 self.__current_file = fileName
                 check = False
+        self.__hunter.load_cap_file(self.__current_file)
         print(self.__current_file + " is loaded and ready to go! Happy Hunting!")
         return
 
+    def save_all(self):
+        if self.__hunter.get_cap == None:
+            print("No capture file has been analyzed yet")
+            return
+
+        check = True
+        fileList = self.__filman.get_text_files(self)
+        while(check):
+            fileName = input("Please enter a file name >>>")
+            if fileName.lower() == "back":
+                return
+            if fileName + ".txt" in fileList and fileName != "tempXYZ123456789.txt":
+                ov = input("Type [Yes] to Overwrite >>>")
+                if ov.lower() == 'back':
+                    return
+                elif(ov.lower() == 'yes'):
+                    self.__filman.save(self, fileName, self.__hunter.get_cap())
+                    print("File saved!")
+                    return
+            else:
+                self.__filman.save(self, fileName, self.__hunter.get_cap())
+                print("File saved!")
+                return
+        return
+
+    def save_target(self):
+        if self.__current_target == None:
+            print("No current target to save")
+            return
+
+        check = True
+        fileList = self.__filman.get_text_files(self)
+        while(check):
+            fileName = input("Please enter a file name >>>")
+            if fileName.lower() == "back":
+                return
+            if fileName + ".txt" in fileList and fileName != "tempXYZ123456789.txt":
+                ov = input("Type [Yes] to Overwrite >>>")
+                if ov.lower() == 'back':
+                    return
+                elif(ov.lower() == 'yes'):
+                    self.__filman.save(self, fileName, self.__current_target.get_packets())
+                    print("File saved!")
+                    return
+            else:
+                self.__filman.save(self, fileName, self.__current_target.get_packets())
+                print("File saved!")
+                return
+        return
 
     def connect_menu(self):
         print("hi")
 
     def hunt_targets(self):
+        if self.__hunter.get_cap() == None:
+            print("No capture file loaded!")
+            return
         print("\nBeginning Hunt")
         self.__hunter.load_cap_file(self.__current_file)
         self.__hunter.acquire_targets()
@@ -203,6 +260,7 @@ class CommandLine():
                 else:
                     print("Please select a number between 0 and ", self.__current_target.get_repo_len() - 1, ". Or type 'back'")
             return
+
 
 
 if __name__ == "__main__":

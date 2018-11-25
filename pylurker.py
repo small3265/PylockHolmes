@@ -193,10 +193,12 @@ class Target:
 class Hunter():
 
     def __init__(self, capFile=None):
-        if(capFile == None):
+        """if(capFile == None):
             self.__capFile = pyshark.FileCapture('mult2.pcap')
         else:
             self.__capFile = pyshark.FileCapture(capFile)
+        """
+        self.__capFile = capFile
         self.__targetList = list()
         self.__cf = capFile
 
@@ -289,4 +291,10 @@ class Hunter():
         for pkt in self.__capFile:
             print(pkt)
 
+    def get_cap(self):
+        return self.__capFile
 
+    def flush(self):
+        self.__capFile = None
+        self.__cf = None
+        self.__targetList.clear()

@@ -6,12 +6,27 @@ So we are still looking to accomplish the following:
     - Individual computers send ethernet requests to the Asus Router which makes internet requests
     - Need to match ethernet request to internet request in order to determine website visited by the
        each individual computer
-3. Need to be able to save target's packet list to file
-4. Need to be able to load individual data into capture file
+3. Need to be able to save target's packet list to file - DONE
+4. Need to be able to load individual data into capture file - DONE
 5. Need to add live capture sniff capabilities
 6. Need to use subprocess to connect to wifi
 7. Need to possible utilize a wifi brute force
 
 
 
--  Also need to do powerpoint and reflections
+-  Also need to do powerpoint and reflections and add comments to code
+
+11/25/18
+ - Added Save capabilities for both full cap file and target packet repositories
+ - Added file manager class
+
+ Will work on live capture as well as placing comments in through code
+
+ also need to create power point
+ -brief intro to wireshark
+ -need for ability to quickly parse files
+ -instantaneous capture ability
+
+ - test subject was house
+ - issues include missing some of the computers on the network - Bootp would have been nice, filtering internet traffic
+ 
