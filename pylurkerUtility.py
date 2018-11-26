@@ -5,6 +5,8 @@ import invade
 import pylurker
 import warnings
 import fileManager
+import pyshark
+import asyncio
 
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
@@ -42,6 +44,7 @@ def clearScreen():
 class CommandLine():
     def __init__(self):
         self.__hunter = pylurker.Hunter()
+        self.__cap_mode = None
         self.__current_target = None
         self.__current_network = None
         self.__network_list = list()
@@ -66,7 +69,7 @@ class CommandLine():
                         "[TarPack]    | Show all packets of a target",
                         "[CapSave]    | Save the current .pcap file",
                         "[TarSave]    | Save target's packets to file",
-                        "[Sniff]      | Live capture on current network]",
+                        "[LiveCap]    | Live capture on current network]",
                         "[Exit]       | To end program"]
 
 
@@ -77,33 +80,28 @@ class CommandLine():
                             'cappack': self.print_full, 'tarpack': self.print_tarpack,
                             'inspect': self.inspect_target, 'getpack': self.get_pkt_target,
                             'current': self.show_current, 'capsave': self.save_all,
-                            'tarsave': self.save_target}
+                            'tarsave': self.save_target, 'livecap': self.live_cap,
+                            'getlayer': self.display_layer}
 
         self.begin()
 
+    # [List] - Simple print of all available commands
     def display_commands(self):
         print("\nCommand List:")
         for item in self.__options:
             print(item)
         print("")
 
+    # [Scan] - This function uses the invade module which relies on subprocess to get available wifi networks
     def get_networks(self):
         self.__network_list = invade.getNetworkList()
         for i, net in enumerate(self.__network_list):
             print(i+1, " - ", net)
 
+    # {Connect] was not able to finish this in time
     def connect_networks(self):
         print("Still not available")
 
-    def get_text_files(self):
-        fileList = list()
-        fileList.extend([f for f in os.listdir(os.curdir) if f.endswith('.pcap')])
-        print("\nPCAP Files in current directory:")
-        for f in fileList:
-            #https: // stackoverflow.com / questions / 2104080 / how - to - check - file - size - in -python
-            print(f, "   File Size: ", round(os.path.getsize(f) / 1048576, 1), "MB")
-        print("")
-        self.__pcap_files = fileList
 
     def load_file(self):
         check = True
@@ -124,6 +122,7 @@ class CommandLine():
                 check = False
         self.__hunter.load_cap_file(self.__current_file)
         print(self.__current_file + " is loaded and ready to go! Happy Hunting!")
+        self.__cap_mode = "File"
         return
 
     def save_all(self):
@@ -184,8 +183,8 @@ class CommandLine():
             print("No capture file loaded!")
             return
         print("\nBeginning Hunt")
-        self.__hunter.load_cap_file(self.__current_file)
-        self.__hunter.acquire_targets()
+        #self.__hunter.load_cap_file(self.__current_file)
+        self.__hunter.acquire_targets(self.__cap_mode)
         print("\n   ", self.__hunter.get_target_total()," targets acquired!")
         return
 
@@ -261,7 +260,69 @@ class CommandLine():
                     print("Please select a number between 0 and ", self.__current_target.get_repo_len() - 1, ". Or type 'back'")
             return
 
+    def display_layer(self):
+        if not self.__current_target:
+            print("Please use inspect to acquire a target!")
+            return
+        else:
+            check = True
+            while(check):
+                print("Please select layer type by number")
+                for i, item in enumerate(self.__current_target.get_high_layers()):
+                    print(i, " - ", item)
+                lay_select = input("Please select a layer by number >>>")
+                if(lay_select.lower() == 'back'):
+                    return
+                if lay_select.isnumeric() and int(lay_select) >= 0 and int(lay_select) < len(self.__current_target.get_high_layers()):
+                    self.__current_target.print_lay_select(self.__current_target.get_high_layers()[int(lay_select)])
+                    check = False
+                else:
+                    print("Please select a number between 0 and ", len(self.__current_target.get_high_layers() - 1, ". Or type 'back'"))
+        return
 
+
+
+
+    def live_cap(self):
+        check = True
+        sniff_dur = 0
+        while(check):
+            sniff_dur = input("Please choose sniff duration(choose between 5 to 100)")
+            if(sniff_dur.isnumeric() and int(sniff_dur) >= 5 and int(sniff_dur) <= 100):
+                check = False
+        while(not check):
+            net_filter = input("Filter only internet traffic? [Y/N]")
+            if net_filter.lower() == 'n':
+                print("Begin Live Capture - All")
+                self.__hunter.flush()
+                #https: // thepacketgeek.com / pyshark - filecapture - and -livecapture - modules /
+                try:
+                    cap = pyshark.LiveCapture(interface='Wi-Fi')
+                    #cap.set_debug()
+                    cap.sniff(timeout=int(sniff_dur))
+                #https://github.com/aio-libs/aiohttp/issues/1207
+                except asyncio.TimeoutError as e:
+                    print("Async error Caught!")
+                print("Live Capture Completed!")
+                self.__hunter.load_cap_live(cap)
+                print("Finished with live capture = ", cap)
+                check = True
+            elif net_filter.lower() == 'y':
+                print("Beginning Live Capture - Internet Traffic Only")
+                self.__hunter.flush()
+                try:
+                    cap = pyshark.LiveCapture(interface='Wi-Fi', bpf_filter='ip and tcp port 80')
+                    #cap.set_debug()
+                    cap.sniff(timeout=int(sniff_dur))
+                #https://github.com/aio-libs/aiohttp/issues/1207
+                except asyncio.TimeoutError as e:
+                    print("Async error Caught!")
+                print("Live Capture Completed!")
+                self.__hunter.load_cap_live(cap)
+                print("Finished with live capture = ", cap)
+                check = True
+        self.__cap_mode = "Live"
+        return
 
 if __name__ == "__main__":
     cl = CommandLine()

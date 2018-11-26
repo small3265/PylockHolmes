@@ -59,6 +59,11 @@ class Target:
             except AttributeError as e:
                 pass
 
+    def print_lay_select(self, layer):
+        for pkt in self.__pkt_repository:
+            if(pkt.highest_layer == layer):
+                print(pkt)
+
     def get_comp_name(self):
         for pkt in self.__pkt_repository:
             if pkt.highest_layer == 'BOOTP':
@@ -115,12 +120,25 @@ class Target:
                 layers[pkt.highest_layer] = 0
         return layers
 
+    def get_high_layers(self):
+        hlayers = list()
+        for pkt in self.__pkt_repository:
+            if(not pkt.highest_layer in hlayers):
+                hlayers.append(pkt.highest_layer)
+        return hlayers
+
+    def get_vendor(self):
+        if self.get_mac_add() in load_MAC_Vendor().keys():
+            return load_MAC_Vendor()[self.get_mac_add()]
+        else:
+            return "Unknown Vendor"
+
     def mini_repr(self):
-        return str(self.__eth_add) + " ||| " + load_MAC_Vendor()[self.get_mac_add()] + " ||| " + self.get_comp_name()
+        return str(self.__eth_add) + " ||| " + self.get_vendor() + " ||| " + self.get_comp_name()
 
     def __repr__(self):
         if self.get_mac_add() in load_MAC_Vendor().keys():
-            return str(self.__eth_add) + " ||| " + load_MAC_Vendor()[self.get_mac_add()] + " ||| " + self.get_comp_name() +\
+            return str(self.__eth_add) + " ||| " + self.get_vendor() + " ||| " + self.get_comp_name() +\
                     "\n   Number of Packets = " + self.get_repo_size() + "\n      " + str(self.sites_visited()) + \
                     "\n      " + str(self.high_layers()) + "\n       " + str(self.ip_visited()) #+ \
                     #"\n      " + str(self.get_SSL_source())
@@ -202,11 +220,16 @@ class Hunter():
         self.__targetList = list()
         self.__cf = capFile
 
+    def load_cap_live(self, capFile):
+        self.__capFile = capFile
+        self.__cf = "Live_Capture"
+        print("Live Capture File Loaded")
+
     def load_cap_file(self, capFile):
 
         try:
             if os.path.isfile(capFile):
-                self.__capFile = pyshark.FileCapture(capFile)
+                self.__capFile = pyshark.FileCapture(capFile,)
                 self.__cf = capFile
             else:
                 print("File does not exist")
@@ -219,17 +242,30 @@ class Hunter():
             return
 
 
-    def acquire_targets(self):
+    def acquire_targets(self, mode=None):
         #if self.__capFile:
-        for pkt in self.__capFile:
-            if (not self.target_exists(pkt.eth.src)):
-                self.__targetList.append(Target(pkt.eth.src))
-                #print(len(self.__targetList))
-            elif(self.target_exists(pkt.eth.src)):
-                self.get_target(pkt.eth.src).insert_packet(pkt)
-        #else:
-        #    print("No capture file selected")
+        if mode == "Live":
+            i=0
 
+            for pkt in self.__capFile:
+                if (i == 200):
+                    return
+                if (not self.target_exists(pkt.eth.src)):
+                    i += 1
+                    print("Packets analyzed: ",i)
+                    self.__targetList.append(Target(pkt.eth.src))
+                    #print(len(self.__targetList))
+                elif(self.target_exists(pkt.eth.src)):
+                    i += 1
+                    print("Packets analyzed: ", i)
+                    self.get_target(pkt.eth.src).insert_packet(pkt)
+        else:
+            for pkt in self.__capFile:
+                if (not self.target_exists(pkt.eth.src)):
+                    self.__targetList.append(Target(pkt.eth.src))
+                    #print(len(self.__targetList))
+                elif(self.target_exists(pkt.eth.src)):
+                    self.get_target(pkt.eth.src).insert_packet(pkt)
 
 
     def target_exists(self, eth):
