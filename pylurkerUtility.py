@@ -11,10 +11,6 @@ import asyncio
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
 
-def wifi_scan():
-    print("hi")
-command_dict = {'wifi' : invade.getNetworkList}
-connect_dict = {''}
 intro_string = """
                   ____________________________________________________________________________________
                   |                                                                                  |
@@ -42,6 +38,7 @@ def clearScreen():
         print("Error: Unknown operating system")
 
 class CommandLine():
+    """Command tool for running the main loop for commands"""
     def __init__(self):
         self.__hunter = pylurker.Hunter()
         self.__cap_mode = None
@@ -53,6 +50,7 @@ class CommandLine():
         self.__filman = fileManager.FileManager
         self.__input_string = ""
         self.__prompt_string = "PyLurker >>> "
+        # List of commands
         self.__options = ["[List]       | List of all available commands",
                         "[Scan]       | Return a list of all available networks",
                         "[Connect]    | Attempt connect to a network",
@@ -72,7 +70,7 @@ class CommandLine():
                         "[LiveCap]    | Live capture on current network]",
                         "[Exit]       | To end program"]
 
-
+        # Dictionary used to index commands to related functions
         self.__command_dict = {'list': self.display_commands, 'scan': self.get_networks,
                             'connect' : self.connect_networks, 'load': self.load_file,
                             'files': self.__filman.get_pcap_files, 'hunt': self.hunt_targets,
@@ -100,13 +98,40 @@ class CommandLine():
 
     # {Connect] was not able to finish this in time
     def connect_networks(self):
-        print("Still not available")
+        print("Please choose network you wish to connect to:")
+        # populate a local list
+        net_list = invade.getNet()
+        for i, net in enumerate(net_list):
+            print(i, " - ", net)
+        if(net_list):
+            check = True
+            while(check):
+                net_num = input("Please select network >>>")
+                if net_num == 'back':
+                    return
+                if net_num.isnumeric() and int(net_num) >= 0 and int(net_num) < len(net_list):
+                    print("Connecting...")
+                    if(not 'Security:   Open' in net_list[int(net_num)]):
+                        # Strip the network name to connect to
+                        invade.connect_network(net_list[int(net_num)])
+                    else:
+                        invade.connect_network(net_list[int(net_num)], False)
+                    check = False
+                else:
+                    print("Please select a number between 1 and ", len(net_list) - 1, ". Or type 'back'")
+            if(invade.internet_check()):
+                print("Connected Successfully")
+            else:
+                print("Unsuccessful connection")
+        return
 
-
+    # Simple function to load a .pcap file from current directory
     def load_file(self):
         check = True
+        #reset the hunters values
         self.__hunter.flush()
         print("\nPlease select file from list below:")
+        #Access the filemanager
         self.__pcap_files = self.__filman.get_pcap_files(self)
         while(check):
             fileName = input("Select File >>>")
@@ -125,18 +150,20 @@ class CommandLine():
         self.__cap_mode = "File"
         return
 
+    # Save all packets to txt file
     def save_all(self):
+        # verify that a pcap file has been loaded to save to txt file
         if self.__hunter.get_cap == None:
             print("No capture file has been analyzed yet")
             return
-
+        #Begin loop for filename input
         check = True
         fileList = self.__filman.get_text_files(self)
         while(check):
             fileName = input("Please enter a file name >>>")
             if fileName.lower() == "back":
                 return
-            if fileName + ".txt" in fileList and fileName != "tempXYZ123456789.txt":
+            if fileName + ".txt" in fileList and fileName != "tempXYZ123456789.txt" and fileName.isalnum():
                 ov = input("Type [Yes] to Overwrite >>>")
                 if ov.lower() == 'back':
                     return
@@ -150,6 +177,7 @@ class CommandLine():
                 return
         return
 
+    # Save all packets associated with a specific target
     def save_target(self):
         if self.__current_target == None:
             print("No current target to save")
@@ -175,20 +203,17 @@ class CommandLine():
                 return
         return
 
-    def connect_menu(self):
-        print("hi")
-
+    # function which sets the hunter object into motion of acquiring its target list
     def hunt_targets(self):
         if self.__hunter.get_cap() == None:
             print("No capture file loaded!")
             return
         print("\nBeginning Hunt")
-        #self.__hunter.load_cap_file(self.__current_file)
         self.__hunter.acquire_targets(self.__cap_mode)
         print("\n   ", self.__hunter.get_target_total()," targets acquired!")
         return
 
-
+    # Display a lsit of all current targets
     def show_targets(self):
         tempList = self.__hunter.get_mini_target_list()
         for i, tg in enumerate(tempList):
@@ -199,6 +224,7 @@ class CommandLine():
         for i, tg in enumerate(tempList):
             print(i+1, "-", tg)
 
+    # main loop which asks for inputs associated with the command list
     def begin(self):
         exit_flag = False
         print(intro_string)
@@ -210,14 +236,18 @@ class CommandLine():
             if self.__input_string.lower() in self.__command_dict.keys():
                 self.__command_dict[self.__input_string]()
 
+    #calls on hunter object to print full cap file
     def print_full(self):
         self.__hunter.print_full_cap()
 
+    # prints the current target
     def show_current(self):
         print(self.__current_target)
 
+    # inspect target is how the current target variable in the command line object is populated
     def inspect_target(self):
         print("\nPlease select target from list below using associated number:")
+        # Print a list of current objects
         self.show_targets()
         check = True
         while(check):
@@ -232,6 +262,7 @@ class CommandLine():
                 print("Please select a number between 1 and ", self.__hunter.get_target_total(), ". Or type 'back'")
         return
 
+    # displays all packets associated with the current target
     def print_tarpack(self):
         if not self.__current_target:
             print("Please use inspect to acquire a target!")
@@ -241,6 +272,8 @@ class CommandLine():
                 print(pkt)
         return
 
+    # displays a simplified view of all packets by layers included
+    # user picks a packet
     def get_pkt_target(self):
         if not self.__current_target:
             print("Please use inspect to acquire a target!")
@@ -260,6 +293,7 @@ class CommandLine():
                     print("Please select a number between 0 and ", self.__current_target.get_repo_len() - 1, ". Or type 'back'")
             return
 
+    # Function has use select from a list of highest_layers and shows all packets associated with this highest layer
     def display_layer(self):
         if not self.__current_target:
             print("Please use inspect to acquire a target!")
@@ -280,20 +314,26 @@ class CommandLine():
                     print("Please select a number between 0 and ", len(self.__current_target.get_high_layers() - 1, ". Or type 'back'"))
         return
 
+    # live capture mode
 
-
-
+    # VERY IMPORTANT:
+    # in order work correctly you will need to open command line in adminstrator mode and type:
+    #     'sc config npf start= auto'  .  Then restart computer this causes the netGroup packet
+    #     filter to start up automatically
     def live_cap(self):
         check = True
         sniff_dur = 0
+        #set the sniff duration for packet acquisition
         while(check):
             sniff_dur = input("Please choose sniff duration(choose between 5 to 100)")
             if(sniff_dur.isnumeric() and int(sniff_dur) >= 5 and int(sniff_dur) <= 100):
                 check = False
+        # Determine if internet filtering is required
         while(not check):
             net_filter = input("Filter only internet traffic? [Y/N]")
             if net_filter.lower() == 'n':
                 print("Begin Live Capture - All")
+                # flush the hunter's variables
                 self.__hunter.flush()
                 #https: // thepacketgeek.com / pyshark - filecapture - and -livecapture - modules /
                 try:
@@ -315,6 +355,7 @@ class CommandLine():
                     #cap.set_debug()
                     cap.sniff(timeout=int(sniff_dur))
                 #https://github.com/aio-libs/aiohttp/issues/1207
+                #work around with the async error during live capture
                 except asyncio.TimeoutError as e:
                     print("Async error Caught!")
                 print("Live Capture Completed!")

@@ -25,6 +25,7 @@ def url_lookup(ip_add):
 
 
 class Target:
+    """ Individual Target Class that is identified by a unique Ethernet ID"""
     total_targets = 0
     def __init__(self, eth = None):
         self.__id = Target.total_targets
@@ -33,18 +34,23 @@ class Target:
         self.__pkt_repository = list()
         #self.__name = self.get_comp_name()
 
+    #getter function for ethernet address
     def get_eth_add(self):
         return self.__eth_add
 
+    # getter function to seperate and get the first 6 hexidecimal ethernet to get mac vendor lookup
     def get_mac_add(self):
         return str(self.__eth_add).replace(':', '').upper()[0:6]
 
+    # converts a given ethernet address to mac address
     def convert_mac_add(self, eth):
         return str(eth).replace(':', '').upper()[0:6]
 
+    # allows insertion of packet into private list
     def insert_packet(self, pkt):
         self.__pkt_repository.append(pkt)
 
+    # returns dns qry name
     def dns_lookup(self, pkt):
         return pkt.dns.qry_name
 
@@ -52,6 +58,7 @@ class Target:
     def get_packets(self):
         return self.__pkt_repository
 
+    # gives packet in for all packets in target
     def display_pkt_info(self):
         for pkt in self.__pkt_repository:
             try:
@@ -59,11 +66,13 @@ class Target:
             except AttributeError as e:
                 pass
 
+    # get packets with a matching highest layer
     def print_lay_select(self, layer):
         for pkt in self.__pkt_repository:
             if(pkt.highest_layer == layer):
                 print(pkt)
 
+    # Get the computer name from the BOOTP Layer
     def get_comp_name(self):
         for pkt in self.__pkt_repository:
             if pkt.highest_layer == 'BOOTP':
@@ -73,7 +82,7 @@ class Target:
                     pass
         return 'Unknown'
 
-
+    # returns all IP visited by the target using pkt.ip.dst
     def ip_visited(self):
         visited = dict()
         for pkt in self.__pkt_repository:
@@ -89,6 +98,7 @@ class Target:
                 pass
         return visited
 
+    # attempt to lookup the sites visited by a target
     def sites_visited(self):
         visited = dict()
         for pkt in self.__pkt_repository:
@@ -104,13 +114,14 @@ class Target:
         #return {url_lookup(key):value for (key,value) in visited.items()}
         return visited
 
+    # return number of packets in repository
     def get_repo_size(self):
         if(not self.__pkt_repository):
             return "0"
         else:
             return str(len(self.__pkt_repository))
 
-
+    # return dict of all highest layers and number of time layer exists
     def high_layers(self):
         layers = dict()
         for pkt in self.__pkt_repository:
@@ -120,6 +131,7 @@ class Target:
                 layers[pkt.highest_layer] = 0
         return layers
 
+    # get highest layers shown throughout all packets
     def get_high_layers(self):
         hlayers = list()
         for pkt in self.__pkt_repository:
@@ -127,15 +139,18 @@ class Target:
                 hlayers.append(pkt.highest_layer)
         return hlayers
 
+    # this returns the vendor by checking the vendor ID list
     def get_vendor(self):
         if self.get_mac_add() in load_MAC_Vendor().keys():
             return load_MAC_Vendor()[self.get_mac_add()]
         else:
             return "Unknown Vendor"
 
+    # quick representation for printing out
     def mini_repr(self):
         return str(self.__eth_add) + " ||| " + self.get_vendor() + " ||| " + self.get_comp_name()
 
+    # Overriding the __repr__ fuction
     def __repr__(self):
         if self.get_mac_add() in load_MAC_Vendor().keys():
             return str(self.__eth_add) + " ||| " + self.get_vendor() + " ||| " + self.get_comp_name() +\
@@ -149,14 +164,17 @@ class Target:
                     "\n      " + str(self.high_layers()) + "\n       " + str(self.ip_visited()) #+ \
                     #"\n      " + str(self.get_SSL_source())
 
+    # print all packets in list
     def display_packets(self):
         for pkt in self.__pkt_repository:
             print(pkt)
 
+    # print all highest layers in packet list
     def display_highest_layer(self):
         for pkt in self.__pkt_repository:
             print(pkt.highest_layer)
 
+    # print all SSL layers
     def display_SSL(self):
         for pkt in self.__pkt_repository:
             try:
@@ -165,6 +183,7 @@ class Target:
             except AttributeError:
                 pass
 
+    # attempt to get all the SSL sources for requests
     def get_SSL_source(self):
         sources = dict()
         for pkt in self.__pkt_repository:
@@ -176,6 +195,7 @@ class Target:
                         sources[self.convert_mac_add(pkt.eth.src)] = 0
         return sources
 
+    # return all browser layers
     def display_browser(self):
         for pkt in self.__pkt_repository:
             try:
@@ -184,12 +204,14 @@ class Target:
             except AttributeError:
                 pass
 
+    # get a specific packet by number
     def get_packet_by_num(self, num):
         if num >= 0 and num < len(self.__pkt_repository):
             return self.__pkt_repository[num]
         else:
             print("Packet is out of range")
 
+    # displays a quick summary of all packets in repository
     def display_packet_summary(self):
         build_string = ""
         for i, pkt in enumerate(self.__pkt_repository):
@@ -205,11 +227,12 @@ class Target:
                     build_string += "\n"
         return build_string
 
+    # get length of packet repository
     def get_repo_len(self):
         return len(self.__pkt_repository)
 
 class Hunter():
-
+    """ Hunter class parses capture file directly and delegates targets"""
     def __init__(self, capFile=None):
         """if(capFile == None):
             self.__capFile = pyshark.FileCapture('mult2.pcap')
@@ -220,13 +243,14 @@ class Hunter():
         self.__targetList = list()
         self.__cf = capFile
 
+    # loading a live capture into the hunter object
     def load_cap_live(self, capFile):
         self.__capFile = capFile
         self.__cf = "Live_Capture"
         print("Live Capture File Loaded")
 
+    # Loading of a file capture into the hunter object
     def load_cap_file(self, capFile):
-
         try:
             if os.path.isfile(capFile):
                 self.__capFile = pyshark.FileCapture(capFile,)
@@ -241,13 +265,14 @@ class Hunter():
             print("Capture file loaded")
             return
 
-
+    # Main function that uses the ethernet.source to delegate most targets on the network
     def acquire_targets(self, mode=None):
-        #if self.__capFile:
+        #if mode is live capture there is an inherent error in the capture file
+        # the file indicates a specific number of packets however, there are much more in the file itself
         if mode == "Live":
             i=0
-
             for pkt in self.__capFile:
+                # limit packet analysis to only 200
                 if (i == 200):
                     return
                 if (not self.target_exists(pkt.eth.src)):
@@ -260,25 +285,28 @@ class Hunter():
                     print("Packets analyzed: ", i)
                     self.get_target(pkt.eth.src).insert_packet(pkt)
         else:
+            #for regular file capture we just create targets and append them to that target list they belong to.
             for pkt in self.__capFile:
                 if (not self.target_exists(pkt.eth.src)):
                     self.__targetList.append(Target(pkt.eth.src))
-                    #print(len(self.__targetList))
+                    self.get_target(pkt.eth.src).insert_packet(pkt)
                 elif(self.target_exists(pkt.eth.src)):
                     self.get_target(pkt.eth.src).insert_packet(pkt)
 
-
+    # check to see if target exist by ethernet address
     def target_exists(self, eth):
         for tt in self.__targetList:
             if(tt.get_eth_add() == eth):
                 return True
         return False
 
+    # return target by ethernet address
     def get_target(self, eth):
         for tt in self.__targetList:
             if tt.get_eth_add() == eth:
                 return tt
 
+    # call to print all packets associated with target
     def print_target_data(self, num=None):
         if num == None:
             for tt in self.__targetList:
@@ -288,6 +316,7 @@ class Hunter():
         else:
             print("Number out of range of target list")
 
+    # call to print the highest layers associated with target
     def print_highest_layers(self, num=None):
         if num == None:
             for tt in self.__targetList:
@@ -297,40 +326,53 @@ class Hunter():
         else:
             print("Number out of range of target list")
 
+    # getter function for target list
     def get_target_list(self):
         return self.__targetList
 
+    # getter function for different representation of target list
     def get_mini_target_list(self):
         tempList = list()
         for tg in self.__targetList:
             tempList.append(tg.mini_repr())
         return tempList
 
+    # get length of target list
     def get_target_total(self):
         return len(self.__targetList)
 
+    # get a target by a number in the target list
     def get_target_num(self, num):
         if num >= 0 and num < len(self.__targetList):
             return self.__targetList[num]
 
+    # simple print of target list
     def print_target_list(self):
         for tt in self.__targetList:
             print(tt)
 
+    # printing the current file name in the directory
     def print_file_path(self):
         print(self.__cf)
 
+    # test print of second cap
     def print_2(self):
         print(self.__capFile[2])
 
+    # print the full cap file
     def print_full_cap(self):
         for pkt in self.__capFile:
             print(pkt)
 
+    # getter function for the hunter's capfile
     def get_cap(self):
         return self.__capFile
 
+    # flushing all the information in the hunter object and close any asynced loops
     def flush(self):
+        if self.__capFile:
+            self.__capFile._close_async()
         self.__capFile = None
+
         self.__cf = None
         self.__targetList.clear()

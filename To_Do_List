@@ -9,10 +9,11 @@ So we are still looking to accomplish the following:
 3. Need to be able to save target's packet list to file - DONE 11/23/18
 4. Need to be able to load individual data into capture file - DONE
 5. Need to add live capture sniff capabilities -  DONE 11/26/18
-6. Need to use subprocess to connect to wifi - Not going to happen
+6. Need to use subprocess to connect to wifi - 11/27/18 - Semi-successful
 7. Need to possible utilize a wifi brute force - Not going to happen
 8. Display selected Highest Layer - 11/26/18
-
+9. Extract FTP info
+10. Extract VOIP raw files
 
 
 
@@ -42,3 +43,18 @@ Ok so issues with live capture:
 
 
 - Still need to put together power point and individual reflections.  Will work on this tomorrow as well as comments in code
+
+11/27/18-
+- Added connect to network however, unsuccessfully
+- discovered bug with multiple file captures
+REMEDY
+go to base_events.py in pyshark and comment out the following lines
+
+Obviously this is bad coding but we need a work around
+
+
+511        #if events._get_running_loop() is not None:
+512        #    raise RuntimeError(
+513        #        'Cannot run the event loop while another loop is running')
+
+- added comments to code

@@ -1,9 +1,11 @@
 import os
 
 class FileManager():
+    """ A specific object used to interact with file management"""
     def __init(self):
         current_directory = os.curdir
 
+    # get a list of all pcap files in the current directory
     def get_pcap_files(self):
         fileList = list()
         fileList.extend([f for f in os.listdir(os.curdir) if f.endswith('.pcap')])
@@ -14,7 +16,7 @@ class FileManager():
         print("")
         return fileList
 
-
+    # get a list of all text filed in current directory
     def get_text_files(self):
         fileList = list()
         fileList.extend([f for f in os.listdir(os.curdir) if f.endswith('.txt')])
@@ -25,6 +27,8 @@ class FileManager():
         print("")
         return fileList
 
+    # saving packet listed into a text file
+    # obnoxious issue with formatting the the text going into the file
     def save(self, name, file):
         txt = name + ".txt"
         f = open(txt, "w")
