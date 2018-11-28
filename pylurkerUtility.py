@@ -67,19 +67,20 @@ class CommandLine():
                         "[TarPack]    | Show all packets of a target",
                         "[CapSave]    | Save the current .pcap file",
                         "[TarSave]    | Save target's packets to file",
+                        "[Percent]    | Show percentages of highest layer traffic",
                         "[LiveCap]    | Live capture on current network]",
                         "[Exit]       | To end program"]
 
         # Dictionary used to index commands to related functions
         self.__command_dict = {'list': self.display_commands, 'scan': self.get_networks,
                             'connect' : self.connect_networks, 'load': self.load_file,
-                            'files': self.__filman.get_pcap_files, 'hunt': self.hunt_targets,
+                            'files': self.show_pcap, 'hunt': self.hunt_targets,
                             'show': self.show_targets, 'stats': self.show_stats,
                             'cappack': self.print_full, 'tarpack': self.print_tarpack,
                             'inspect': self.inspect_target, 'getpack': self.get_pkt_target,
                             'current': self.show_current, 'capsave': self.save_all,
                             'tarsave': self.save_target, 'livecap': self.live_cap,
-                            'getlayer': self.display_layer}
+                            'getlayer': self.display_layer, 'percent': self.total_percentage}
 
         self.begin()
 
@@ -95,6 +96,11 @@ class CommandLine():
         self.__network_list = invade.getNetworkList()
         for i, net in enumerate(self.__network_list):
             print(i+1, " - ", net)
+        #print(invade.get_wifi_list())
+
+    # show all pcap files in directory
+    def show_pcap(self):
+        self.__filman.get_pcap_files(self)
 
     # {Connect] was not able to finish this in time
     def connect_networks(self):
@@ -246,6 +252,9 @@ class CommandLine():
 
     # inspect target is how the current target variable in the command line object is populated
     def inspect_target(self):
+        if(not self.__hunter.get_target_list()):
+            print("No targetrs to inspect")
+            return
         print("\nPlease select target from list below using associated number:")
         # Print a list of current objects
         self.show_targets()
@@ -313,6 +322,12 @@ class CommandLine():
                 else:
                     print("Please select a number between 0 and ", len(self.__current_target.get_high_layers() - 1, ". Or type 'back'"))
         return
+
+    def total_percentage(self):
+        if self.__hunter.get_target_total() > 0:
+            self.__hunter.print_percentage()
+        else:
+            print("Please go hunting first!")
 
     # live capture mode
 

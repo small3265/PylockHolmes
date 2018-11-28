@@ -376,3 +376,27 @@ class Hunter():
 
         self.__cf = None
         self.__targetList.clear()
+
+    def print_percentage(self):
+        per_dict = dict()
+        tc = 0
+        for pkt in self.__capFile:
+            if (pkt.highest_layer in per_dict.keys()):
+                per_dict[pkt.highest_layer] += 1
+                tc += 1
+            else:
+                per_dict[pkt.highest_layer] = 1
+                tc += 1
+
+        d = {k: round((v / sum(per_dict.values())) * 100, 2) for (k, v) in per_dict.items()}
+
+        tupList = [(v, k) for k, v in d.items()]
+
+        sort_list = [b for a, b in sorted((tup[0], tup) for tup in tupList)]
+        print("{0:22} {1}".format("Highest Layer", "%"))
+        print("_" * 26)
+        for item in sort_list:
+            print("{0:20} {1:>5}".format(item[1], item[0]))
+        print("_" * 26)
+        print("Total               100.00")
+
