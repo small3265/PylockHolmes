@@ -69,6 +69,7 @@ class CommandLine():
                         "[TarSave]    | Save target's packets to file",
                         "[Percent]    | Show percentages of highest layer traffic",
                         "[LiveCap]    | Live capture on current network]",
+                        "[Flush]      | Flush the Hunter Object",
                         "[Exit]       | To end program"]
 
         # Dictionary used to index commands to related functions
@@ -80,7 +81,8 @@ class CommandLine():
                             'inspect': self.inspect_target, 'getpack': self.get_pkt_target,
                             'current': self.show_current, 'capsave': self.save_all,
                             'tarsave': self.save_target, 'livecap': self.live_cap,
-                            'getlayer': self.display_layer, 'percent': self.total_percentage}
+                            'getlayer': self.display_layer, 'percent': self.total_percentage,
+                            'flush': self.flush_hunter}
 
         self.begin()
 
@@ -101,6 +103,11 @@ class CommandLine():
     # show all pcap files in directory
     def show_pcap(self):
         self.__filman.get_pcap_files(self)
+
+    # flush the memory of the hunter object
+    def flush_hunter(self):
+        self.__hunter.flush()
+        print("Hunter Object successfully flushed!")
 
     # {Connect] was not able to finish this in time
     def connect_networks(self):
@@ -363,6 +370,8 @@ class CommandLine():
                 print("Finished with live capture = ", cap)
                 check = True
             elif net_filter.lower() == 'y':
+                print("Currently Not working with filter")
+                return
                 print("Beginning Live Capture - Internet Traffic Only")
                 self.__hunter.flush()
                 try:

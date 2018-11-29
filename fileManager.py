@@ -3,7 +3,7 @@ import os
 class FileManager():
     """ A specific object used to interact with file management"""
     def __init(self):
-        current_directory = os.curdir
+        self.__current_directory = os.curdir
 
     # get a list of all pcap files in the current directory
     def get_pcap_files(self):
