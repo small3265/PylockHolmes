@@ -2,7 +2,6 @@ import pyshark
 import socket
 import os.path
 
-
 # function to create a MAC address to vendor dictionary
 def load_MAC_Vendor():
     macVendorList = dict()
@@ -22,7 +21,6 @@ def url_lookup(ip_add):
     except socket.herror:
         return "Unknown"
     return hostname
-
 
 class Target:
     """ Individual Target Class that is identified by a unique Ethernet ID"""
@@ -86,7 +84,6 @@ class Target:
     def ip_visited(self):
         visited = dict()
         for pkt in self.__pkt_repository:
-
             #https://thepacketgeek.com/pyshark-using-the-packet-object/
             try:
                 if(pkt.ip.dst in visited.keys()):
@@ -109,7 +106,6 @@ class Target:
                     visited[pkt.dns.qry_name] = 0
             except AttributeError as e:
                 pass
-
         #https: // www.datacamp.com / community / tutorials / python - dictionary - comprehension
         #return {url_lookup(key):value for (key,value) in visited.items()}
         return visited
@@ -219,7 +215,6 @@ class Target:
             #[str(f).lstrip('<').rstrip(' Layer>') for f in lay]
             build_string += str(i) + " - "
             for l in lay:
-
                 build_string += str(l._layer_name).upper()
                 if not l == lay[-1]:
                     build_string += "-->"
@@ -242,6 +237,7 @@ class Hunter():
         self.__capFile = capFile
         self.__targetList = list()
         self.__cf = capFile
+        self.__cap_mode = None
 
     # loading a live capture into the hunter object
     def load_cap_live(self, capFile):
@@ -270,6 +266,7 @@ class Hunter():
         #if mode is live capture there is an inherent error in the capture file
         # the file indicates a specific number of packets however, there are much more in the file itself
         if mode == "Live":
+            self.__cap_mode = mode
             i=0
             for pkt in self.__capFile:
                 # limit packet analysis to only 200
@@ -285,6 +282,8 @@ class Hunter():
                     print("Packets analyzed: ", i)
                     self.get_target(pkt.eth.src).insert_packet(pkt)
         else:
+            if mode == None:
+                self.__cap_mode = "File"
             #for regular file capture we just create targets and append them to that target list they belong to.
             for pkt in self.__capFile:
                 if (not self.target_exists(pkt.eth.src)):
@@ -373,14 +372,17 @@ class Hunter():
         if self.__capFile:
             self.__capFile._close_async()
         self.__capFile = None
-
+        self.__cap_mode = None
         self.__cf = None
         self.__targetList.clear()
 
+    # will print out the percent of highest lelves from packets
     def print_percentage(self):
         per_dict = dict()
         tc = 0
         for pkt in self.__capFile:
+            if self.__cap_mode == "Live" and tc >= 200:
+                break
             if (pkt.highest_layer in per_dict.keys()):
                 per_dict[pkt.highest_layer] += 1
                 tc += 1
@@ -389,9 +391,7 @@ class Hunter():
                 tc += 1
 
         d = {k: round((v / sum(per_dict.values())) * 100, 2) for (k, v) in per_dict.items()}
-
         tupList = [(v, k) for k, v in d.items()]
-
         sort_list = [b for a, b in sorted((tup[0], tup) for tup in tupList)]
         print("{0:22} {1}".format("Highest Layer", "%"))
         print("_" * 26)

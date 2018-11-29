@@ -1,17 +1,21 @@
 import subprocess
 from subprocess import Popen, STDOUT, PIPE
 from time import sleep
+import wifi
 
-
+def get_wifi_list():
+    wlist = []
+    cells = wifi.Cell.all('wlan0')
+    for cell in cells:
+        wlist.append(cell)
+    return wlist
 # modulate used specifically to interact with sub process to acquire wifi information
-
 # get a list of networks available in Wi-Fi
 #https://stackoverflow.com/questions/31868486/list-all-wireless-networks-python-for-pc
 def getNetworkList():
     results = subprocess.check_output(["netsh", "wlan", "show", "network"])
     results = results.decode('utf-8')
     results = results.split('\r\n')
-
     nets = list()
     for item in results:
         # Search for the SSID in the list
@@ -68,8 +72,6 @@ def internet_check():
         import httplib
     except:
         import http.client as httplib
-
-
     conn = httplib.HTTPConnection("www.google.com", timeout=5)
     try:
         conn.request("HEAD", "/")
